@@ -93,55 +93,55 @@ benchmarks_instance_pallet! {
 	}
 
 	// Benchmark `set_balance` coming from ROOT account. This always creates an account.
-	set_balance_creating {
-		let user: T::AccountId = account("user", 0, SEED);
-		let user_lookup: <T::Lookup as StaticLookup>::Source = T::Lookup::unlookup(user.clone());
+	// set_balance_creating {
+	// 	let user: T::AccountId = account("user", 0, SEED);
+	// 	let user_lookup: <T::Lookup as StaticLookup>::Source = T::Lookup::unlookup(user.clone());
 
-		// Give the user some initial balance.
-		let existential_deposit = T::ExistentialDeposit::get();
-		let balance_amount = existential_deposit.saturating_mul(ED_MULTIPLIER.into());
-		let _ = <Balances<T, I> as Currency<_>>::make_free_balance_be(&user, balance_amount);
-	}: set_balance(RawOrigin::Root, user_lookup, balance_amount, balance_amount)
-	verify {
-		assert_eq!(Balances::<T, I>::free_balance(&user), balance_amount);
-		assert_eq!(Balances::<T, I>::reserved_balance(&user), balance_amount);
-	}
+	// 	// Give the user some initial balance.
+	// 	let existential_deposit = T::ExistentialDeposit::get();
+	// 	let balance_amount = existential_deposit.saturating_mul(ED_MULTIPLIER.into());
+	// 	let _ = <Balances<T, I> as Currency<_>>::make_free_balance_be(&user, balance_amount);
+	// }: set_balance(RawOrigin::Root, user_lookup, balance_amount, balance_amount)
+	// verify {
+	// 	assert_eq!(Balances::<T, I>::free_balance(&user), balance_amount);
+	// 	assert_eq!(Balances::<T, I>::reserved_balance(&user), balance_amount);
+	// }
 
 	// Benchmark `set_balance` coming from ROOT account. This always kills an account.
-	set_balance_killing {
-		let user: T::AccountId = account("user", 0, SEED);
-		let user_lookup: <T::Lookup as StaticLookup>::Source = T::Lookup::unlookup(user.clone());
+	// set_balance_killing {
+	// 	let user: T::AccountId = account("user", 0, SEED);
+	// 	let user_lookup: <T::Lookup as StaticLookup>::Source = T::Lookup::unlookup(user.clone());
 
-		// Give the user some initial balance.
-		let existential_deposit = T::ExistentialDeposit::get();
-		let balance_amount = existential_deposit.saturating_mul(ED_MULTIPLIER.into());
-		let _ = <Balances<T, I> as Currency<_>>::make_free_balance_be(&user, balance_amount);
-	}: set_balance(RawOrigin::Root, user_lookup, Zero::zero(), Zero::zero())
-	verify {
-		assert!(Balances::<T, I>::free_balance(&user).is_zero());
-	}
+	// 	// Give the user some initial balance.
+	// 	let existential_deposit = T::ExistentialDeposit::get();
+	// 	let balance_amount = existential_deposit.saturating_mul(ED_MULTIPLIER.into());
+	// 	let _ = <Balances<T, I> as Currency<_>>::make_free_balance_be(&user, balance_amount);
+	// }: set_balance(RawOrigin::Root, user_lookup, Zero::zero(), Zero::zero())
+	// verify {
+	// 	assert!(Balances::<T, I>::free_balance(&user).is_zero());
+	// }
 
 	// Benchmark `force_transfer` extrinsic with the worst possible conditions:
 	// * Transfer will kill the sender account.
 	// * Transfer will create the recipient account.
-	force_transfer {
-		let existential_deposit = T::ExistentialDeposit::get();
-		let source: T::AccountId = account("source", 0, SEED);
-		let source_lookup: <T::Lookup as StaticLookup>::Source = T::Lookup::unlookup(source.clone());
+	// force_transfer {
+	// 	let existential_deposit = T::ExistentialDeposit::get();
+	// 	let source: T::AccountId = account("source", 0, SEED);
+	// 	let source_lookup: <T::Lookup as StaticLookup>::Source = T::Lookup::unlookup(source.clone());
 
-		// Give some multiple of the existential deposit
-		let balance = existential_deposit.saturating_mul(ED_MULTIPLIER.into());
-		let _ = <Balances<T, I> as Currency<_>>::make_free_balance_be(&source, balance);
+	// 	// Give some multiple of the existential deposit
+	// 	let balance = existential_deposit.saturating_mul(ED_MULTIPLIER.into());
+	// 	let _ = <Balances<T, I> as Currency<_>>::make_free_balance_be(&source, balance);
 
-		// Transfer `e - 1` existential deposits + 1 unit, which guarantees to create one account, and reap this user.
-		let recipient: T::AccountId = account("recipient", 0, SEED);
-		let recipient_lookup: <T::Lookup as StaticLookup>::Source = T::Lookup::unlookup(recipient.clone());
-		let transfer_amount = existential_deposit.saturating_mul((ED_MULTIPLIER - 1).into()) + 1u32.into();
-	}: force_transfer(RawOrigin::Root, source_lookup, recipient_lookup, transfer_amount)
-	verify {
-		assert_eq!(Balances::<T, I>::free_balance(&source), Zero::zero());
-		assert_eq!(Balances::<T, I>::free_balance(&recipient), transfer_amount);
-	}
+	// 	// Transfer `e - 1` existential deposits + 1 unit, which guarantees to create one account, and reap this user.
+	// 	let recipient: T::AccountId = account("recipient", 0, SEED);
+	// 	let recipient_lookup: <T::Lookup as StaticLookup>::Source = T::Lookup::unlookup(recipient.clone());
+	// 	let transfer_amount = existential_deposit.saturating_mul((ED_MULTIPLIER - 1).into()) + 1u32.into();
+	// }: force_transfer(RawOrigin::Root, source_lookup, recipient_lookup, transfer_amount)
+	// verify {
+	// 	assert_eq!(Balances::<T, I>::free_balance(&source), Zero::zero());
+	// 	assert_eq!(Balances::<T, I>::free_balance(&recipient), transfer_amount);
+	// }
 
 	// This benchmark performs the same operation as `transfer` in the worst case scenario,
 	// but additionally introduces many new users into the storage, increasing the the merkle
@@ -194,25 +194,25 @@ benchmarks_instance_pallet! {
 		assert_eq!(Balances::<T, I>::free_balance(&recipient), balance);
 	}
 
-	force_unreserve {
-		let user: T::AccountId = account("user", 0, SEED);
-		let user_lookup: <T::Lookup as StaticLookup>::Source = T::Lookup::unlookup(user.clone());
+	// force_unreserve {
+	// 	let user: T::AccountId = account("user", 0, SEED);
+	// 	let user_lookup: <T::Lookup as StaticLookup>::Source = T::Lookup::unlookup(user.clone());
 
-		// Give some multiple of the existential deposit
-		let existential_deposit = T::ExistentialDeposit::get();
-		let balance = existential_deposit.saturating_mul(ED_MULTIPLIER.into());
-		let _ = <Balances<T, I> as Currency<_>>::make_free_balance_be(&user, balance);
+	// 	// Give some multiple of the existential deposit
+	// 	let existential_deposit = T::ExistentialDeposit::get();
+	// 	let balance = existential_deposit.saturating_mul(ED_MULTIPLIER.into());
+	// 	let _ = <Balances<T, I> as Currency<_>>::make_free_balance_be(&user, balance);
 
-		// Reserve the balance
-		<Balances<T, I> as ReservableCurrency<_>>::reserve(&user, balance)?;
-		assert_eq!(Balances::<T, I>::reserved_balance(&user), balance);
-		assert!(Balances::<T, I>::free_balance(&user).is_zero());
+	// 	// Reserve the balance
+	// 	<Balances<T, I> as ReservableCurrency<_>>::reserve(&user, balance)?;
+	// 	assert_eq!(Balances::<T, I>::reserved_balance(&user), balance);
+	// 	assert!(Balances::<T, I>::free_balance(&user).is_zero());
 
-	}: _(RawOrigin::Root, user_lookup, balance)
-	verify {
-		assert!(Balances::<T, I>::reserved_balance(&user).is_zero());
-		assert_eq!(Balances::<T, I>::free_balance(&user), balance);
-	}
+	// }: _(RawOrigin::Root, user_lookup, balance)
+	// verify {
+	// 	assert!(Balances::<T, I>::reserved_balance(&user).is_zero());
+	// 	assert_eq!(Balances::<T, I>::free_balance(&user), balance);
+	// }
 
 	impl_benchmark_test_suite!(
 		Balances,

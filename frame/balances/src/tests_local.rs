@@ -155,36 +155,36 @@ impl ExtBuilder {
 
 decl_tests! { Test, ExtBuilder, EXISTENTIAL_DEPOSIT }
 
-#[test]
-fn emit_events_with_no_existential_deposit_suicide_with_dust() {
-	<ExtBuilder>::default().existential_deposit(2).build().execute_with(|| {
-		assert_ok!(Balances::set_balance(RawOrigin::Root.into(), 1, 100, 0));
+// #[test]
+// fn emit_events_with_no_existential_deposit_suicide_with_dust() {
+// 	<ExtBuilder>::default().existential_deposit(2).build().execute_with(|| {
+// 		assert_ok!(Balances::set_balance(RawOrigin::Root.into(), 1, 100, 0));
 
-		assert_eq!(
-			events(),
-			[
-				Event::System(system::Event::NewAccount(1)),
-				Event::Balances(crate::Event::Endowed { account: 1, free_balance: 100 }),
-				Event::Balances(crate::Event::BalanceSet { who: 1, free: 100, reserved: 0 }),
-			]
-		);
+// 		assert_eq!(
+// 			events(),
+// 			[
+// 				Event::System(system::Event::NewAccount(1)),
+// 				Event::Balances(crate::Event::Endowed { account: 1, free_balance: 100 }),
+// 				Event::Balances(crate::Event::BalanceSet { who: 1, free: 100, reserved: 0 }),
+// 			]
+// 		);
 
-		let res = Balances::slash(&1, 98);
-		assert_eq!(res, (NegativeImbalance::new(98), 0));
+// 		let res = Balances::slash(&1, 98);
+// 		assert_eq!(res, (NegativeImbalance::new(98), 0));
 
-		// no events
-		assert_eq!(events(), [Event::Balances(crate::Event::Slashed { who: 1, amount: 98 })]);
+// 		// no events
+// 		assert_eq!(events(), [Event::Balances(crate::Event::Slashed { who: 1, amount: 98 })]);
 
-		let res = Balances::slash(&1, 1);
-		assert_eq!(res, (NegativeImbalance::new(1), 0));
+// 		let res = Balances::slash(&1, 1);
+// 		assert_eq!(res, (NegativeImbalance::new(1), 0));
 
-		assert_eq!(
-			events(),
-			[
-				Event::System(system::Event::KilledAccount(1)),
-				Event::Balances(crate::Event::DustLost { account: 1, amount: 1 }),
-				Event::Balances(crate::Event::Slashed { who: 1, amount: 1 })
-			]
-		);
-	});
-}
+// 		assert_eq!(
+// 			events(),
+// 			[
+// 				Event::System(system::Event::KilledAccount(1)),
+// 				Event::Balances(crate::Event::DustLost { account: 1, amount: 1 }),
+// 				Event::Balances(crate::Event::Slashed { who: 1, amount: 1 })
+// 			]
+// 		);
+// 	});
+// }

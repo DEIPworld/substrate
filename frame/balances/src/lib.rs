@@ -298,45 +298,45 @@ pub mod pallet {
 		/// it will reset the account nonce (`frame_system::AccountNonce`).
 		///
 		/// The dispatch origin for this call is `root`.
-		#[pallet::weight(
-			T::WeightInfo::set_balance_creating() // Creates a new account.
-				.max(T::WeightInfo::set_balance_killing()) // Kills an existing account.
-		)]
-		pub fn set_balance(
-			origin: OriginFor<T>,
-			who: <T::Lookup as StaticLookup>::Source,
-			#[pallet::compact] new_free: T::Balance,
-			#[pallet::compact] new_reserved: T::Balance,
-		) -> DispatchResultWithPostInfo {
-			ensure_root(origin)?;
-			let who = T::Lookup::lookup(who)?;
-			let existential_deposit = T::ExistentialDeposit::get();
+		// #[pallet::weight(
+		// 	T::WeightInfo::set_balance_creating() // Creates a new account.
+		// 		.max(T::WeightInfo::set_balance_killing()) // Kills an existing account.
+		// )]
+		// pub fn set_balance(
+		// 	origin: OriginFor<T>,
+		// 	who: <T::Lookup as StaticLookup>::Source,
+		// 	#[pallet::compact] new_free: T::Balance,
+		// 	#[pallet::compact] new_reserved: T::Balance,
+		// ) -> DispatchResultWithPostInfo {
+		// 	ensure_root(origin)?;
+		// 	let who = T::Lookup::lookup(who)?;
+		// 	let existential_deposit = T::ExistentialDeposit::get();
 
-			let wipeout = new_free + new_reserved < existential_deposit;
-			let new_free = if wipeout { Zero::zero() } else { new_free };
-			let new_reserved = if wipeout { Zero::zero() } else { new_reserved };
+		// 	let wipeout = new_free + new_reserved < existential_deposit;
+		// 	let new_free = if wipeout { Zero::zero() } else { new_free };
+		// 	let new_reserved = if wipeout { Zero::zero() } else { new_reserved };
 
-			let (free, reserved) = Self::mutate_account(&who, |account| {
-				if new_free > account.free {
-					mem::drop(PositiveImbalance::<T, I>::new(new_free - account.free));
-				} else if new_free < account.free {
-					mem::drop(NegativeImbalance::<T, I>::new(account.free - new_free));
-				}
+		// 	let (free, reserved) = Self::mutate_account(&who, |account| {
+		// 		if new_free > account.free {
+		// 			mem::drop(PositiveImbalance::<T, I>::new(new_free - account.free));
+		// 		} else if new_free < account.free {
+		// 			mem::drop(NegativeImbalance::<T, I>::new(account.free - new_free));
+		// 		}
 
-				if new_reserved > account.reserved {
-					mem::drop(PositiveImbalance::<T, I>::new(new_reserved - account.reserved));
-				} else if new_reserved < account.reserved {
-					mem::drop(NegativeImbalance::<T, I>::new(account.reserved - new_reserved));
-				}
+		// 		if new_reserved > account.reserved {
+		// 			mem::drop(PositiveImbalance::<T, I>::new(new_reserved - account.reserved));
+		// 		} else if new_reserved < account.reserved {
+		// 			mem::drop(NegativeImbalance::<T, I>::new(account.reserved - new_reserved));
+		// 		}
 
-				account.free = new_free;
-				account.reserved = new_reserved;
+		// 		account.free = new_free;
+		// 		account.reserved = new_reserved;
 
-				(account.free, account.reserved)
-			})?;
-			Self::deposit_event(Event::BalanceSet { who, free, reserved });
-			Ok(().into())
-		}
+		// 		(account.free, account.reserved)
+		// 	})?;
+		// 	Self::deposit_event(Event::BalanceSet { who, free, reserved });
+		// 	Ok(().into())
+		// }
 
 		/// Exactly as `transfer`, except the origin must be root and the source account may be
 		/// specified.
@@ -344,24 +344,24 @@ pub mod pallet {
 		/// - Same as transfer, but additional read and write because the source account is not
 		///   assumed to be in the overlay.
 		/// # </weight>
-		#[pallet::weight(T::WeightInfo::force_transfer())]
-		pub fn force_transfer(
-			origin: OriginFor<T>,
-			source: <T::Lookup as StaticLookup>::Source,
-			dest: <T::Lookup as StaticLookup>::Source,
-			#[pallet::compact] value: T::Balance,
-		) -> DispatchResultWithPostInfo {
-			ensure_root(origin)?;
-			let source = T::Lookup::lookup(source)?;
-			let dest = T::Lookup::lookup(dest)?;
-			<Self as Currency<_>>::transfer(
-				&source,
-				&dest,
-				value,
-				ExistenceRequirement::AllowDeath,
-			)?;
-			Ok(().into())
-		}
+		// #[pallet::weight(T::WeightInfo::force_transfer())]
+		// pub fn force_transfer(
+		// 	origin: OriginFor<T>,
+		// 	source: <T::Lookup as StaticLookup>::Source,
+		// 	dest: <T::Lookup as StaticLookup>::Source,
+		// 	#[pallet::compact] value: T::Balance,
+		// ) -> DispatchResultWithPostInfo {
+		// 	ensure_root(origin)?;
+		// 	let source = T::Lookup::lookup(source)?;
+		// 	let dest = T::Lookup::lookup(dest)?;
+		// 	<Self as Currency<_>>::transfer(
+		// 		&source,
+		// 		&dest,
+		// 		value,
+		// 		ExistenceRequirement::AllowDeath,
+		// 	)?;
+		// 	Ok(().into())
+		// }
 
 		/// Same as the [`transfer`] call, but with a check that the transfer will not kill the
 		/// origin account.
@@ -418,20 +418,17 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Unreserve some balance from a user by force.
-		///
-		/// Can only be called by ROOT.
-		#[pallet::weight(T::WeightInfo::force_unreserve())]
-		pub fn force_unreserve(
-			origin: OriginFor<T>,
-			who: <T::Lookup as StaticLookup>::Source,
-			amount: T::Balance,
-		) -> DispatchResult {
-			ensure_root(origin)?;
-			let who = T::Lookup::lookup(who)?;
-			let _leftover = <Self as ReservableCurrency<_>>::unreserve(&who, amount);
-			Ok(())
-		}
+		// #[pallet::weight(T::WeightInfo::force_unreserve())]
+		// pub fn force_unreserve(
+		// 	origin: OriginFor<T>,
+		// 	who: <T::Lookup as StaticLookup>::Source,
+		// 	amount: T::Balance,
+		// ) -> DispatchResult {
+		// 	ensure_root(origin)?;
+		// 	let who = T::Lookup::lookup(who)?;
+		// 	let _leftover = <Self as ReservableCurrency<_>>::unreserve(&who, amount);
+		// 	Ok(())
+		// }
 	}
 
 	#[pallet::event]

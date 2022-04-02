@@ -129,37 +129,37 @@ fn create_account_extrinsics(
 		.map(|(i, a)| {
 			vec![
 				// Reset the nonce by removing any funds
-				create_extrinsic(
-					client,
-					Sr25519Keyring::Alice.pair(),
-					SudoCall::sudo {
-						call: Box::new(
-							BalancesCall::set_balance {
-								who: AccountId::from(a.public()).into(),
-								new_free: 0,
-								new_reserved: 0,
-							}
-							.into(),
-						),
-					},
-					Some(start_nonce + (i as u32) * 2),
-				),
+				// create_extrinsic(
+				// 	client,
+				// 	Sr25519Keyring::Alice.pair(),
+				// 	SudoCall::sudo {
+				// 		call: Box::new(
+				// 			BalancesCall::set_balance {
+				// 				who: AccountId::from(a.public()).into(),
+				// 				new_free: 0,
+				// 				new_reserved: 0,
+				// 			}
+				// 			.into(),
+				// 		),
+				// 	},
+				// 	Some(start_nonce + (i as u32) * 2),
+				// ),
 				// Give back funds
-				create_extrinsic(
-					client,
-					Sr25519Keyring::Alice.pair(),
-					SudoCall::sudo {
-						call: Box::new(
-							BalancesCall::set_balance {
-								who: AccountId::from(a.public()).into(),
-								new_free: 1_000_000 * DOLLARS,
-								new_reserved: 0,
-							}
-							.into(),
-						),
-					},
-					Some(start_nonce + (i as u32) * 2 + 1),
-				),
+				// create_extrinsic(
+				// 	client,
+				// 	Sr25519Keyring::Alice.pair(),
+				// 	SudoCall::sudo {
+				// 		call: Box::new(
+				// 			BalancesCall::set_balance {
+				// 				who: AccountId::from(a.public()).into(),
+				// 				new_free: 1_000_000 * DOLLARS,
+				// 				new_reserved: 0,
+				// 			}
+				// 			.into(),
+				// 		),
+				// 	},
+				// 	Some(start_nonce + (i as u32) * 2 + 1),
+				// ),
 			]
 		})
 		.flatten()
