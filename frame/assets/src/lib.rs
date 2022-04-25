@@ -1275,4 +1275,10 @@ pub mod pallet {
 			Self::do_transfer_approved(id, &owner, &delegate, &destination, amount)
 		}
 	}
+
+	impl<T, I: 'static> Pallet<T, I> {
+		pub fn lock_asset() {
+			frame_support::log::error!("❗️❗️❗️ lock token asset @TODO ❗️❗️❗️")
+		}
+	}
 }

@@ -1240,4 +1240,10 @@ pub mod pallet {
 			})
 		}
 	}
+
+	impl<T, I: 'static> Pallet<T, I> {
+		pub fn lock_asset() {
+			frame_support::log::error!("❗️❗️❗️ asset lock @TODO ❗️❗️❗️");
+		}
+	}
 }
