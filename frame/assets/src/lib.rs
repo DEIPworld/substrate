@@ -292,6 +292,11 @@ pub mod pallet {
 		ConstU32<300_000>,
 	>;
 
+	#[pallet::storage]
+	/// Locked assets.
+	pub(super) type LockedAsset<T: Config<I>, I: 'static = ()> =
+		StorageMap<_, Blake2_128Concat, T::AssetId, LockedAssetDetails>;
+
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config<I>, I: 'static = ()> {
 		/// Genesis assets: id, owner, is_sufficient, min_balance
@@ -471,6 +476,8 @@ pub mod pallet {
 		Unapproved,
 		/// The source account would not survive the transfer and it needs to stay alive.
 		WouldDie,
+		/// @TODO
+		WrongOwner,
 	}
 
 	#[pallet::call]
@@ -1276,9 +1283,27 @@ pub mod pallet {
 		}
 	}
 
-	impl<T, I: 'static> Pallet<T, I> {
-		pub fn lock_asset() {
-			frame_support::log::error!("❗️❗️❗️ lock token asset @TODO ❗️❗️❗️")
+	impl<T: Config<I>, I: 'static> Pallet<T, I> {
+		pub fn lock_asset(who: &T::AccountId, asset: T::AssetId) -> DispatchResult {
+			let details = Asset::<T, I>::get(asset).ok_or(Error::<T, I>::Unknown)?;
+			ensure!(details.owner == *who, Error::<T, I>::WrongOwner);
+			LockedAsset::<T, I>::insert(asset, LockedAssetDetails {});
+
+			Ok(())
+		}
+
+		pub fn is_asset_locked(asset: T::AssetId) -> bool {
+			LockedAsset::<T, I>::contains_key(asset)
+		}
+
+		pub fn unlock_asset(who: &T::AccountId, asset: T::AssetId) -> DispatchResult {
+			let details = Asset::<T, I>::get(asset).ok_or(Error::<T, I>::Unknown)?;
+			ensure!(details.owner == *who, Error::<T, I>::WrongOwner);
+			LockedAsset::<T, I>::mutate_exists(asset, |details| {
+				*details = None;
+			});
+
+			Ok(())
 		}
 	}
 }

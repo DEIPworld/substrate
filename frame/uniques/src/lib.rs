@@ -188,6 +188,14 @@ pub mod pallet {
 		OptionQuery,
 	>;
 
+	#[pallet::storage]
+	/// Locked assets.
+	pub(super) type LockedAsset<T: Config<I>, I: 'static = ()> = StorageNMap<
+		_,
+		(NMapKey<Blake2_128Concat, T::ClassId>, NMapKey<Blake2_128Concat, T::InstanceId>),
+		LockedAssetDetails,
+	>;
+
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config<I>, I: 'static = ()> {
@@ -1241,9 +1249,35 @@ pub mod pallet {
 		}
 	}
 
-	impl<T, I: 'static> Pallet<T, I> {
-		pub fn lock_asset() {
-			frame_support::log::error!("❗️❗️❗️ asset lock @TODO ❗️❗️❗️");
+	impl<T: Config<I>, I: 'static> Pallet<T, I> {
+		pub fn lock_asset(
+			who: &T::AccountId,
+			class: T::ClassId,
+			instance: T::InstanceId,
+		) -> DispatchResult {
+			let asset = Asset::<T, I>::get(class, instance).ok_or(Error::<T, I>::Unknown)?;
+			ensure!(asset.owner == *who, Error::<T, I>::WrongOwner);
+			LockedAsset::<T, I>::insert((class, instance), LockedAssetDetails {});
+
+			Ok(())
+		}
+
+		pub fn is_asset_locked(class: T::ClassId, instance: T::InstanceId) -> bool {
+			LockedAsset::<T, I>::contains_key((class, instance))
+		}
+
+		pub fn unlock_asset(
+			who: &T::AccountId,
+			class: T::ClassId,
+			instance: T::InstanceId,
+		) -> DispatchResult {
+			let asset = Asset::<T, I>::get(class, instance).ok_or(Error::<T, I>::Unknown)?;
+			ensure!(asset.owner == *who, Error::<T, I>::WrongOwner);
+			LockedAsset::<T, I>::mutate_exists((class, instance), |details| {
+				*details = None;
+			});
+
+			Ok(())
 		}
 	}
 }

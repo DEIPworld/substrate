@@ -120,3 +120,6 @@ pub struct InstanceMetadata<DepositBalance, StringLimit: Get<u32>> {
 	/// Whether the asset metadata may be changed by a non Force origin.
 	pub(super) is_frozen: bool,
 }
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, TypeInfo)]
+pub struct LockedAssetDetails {}
