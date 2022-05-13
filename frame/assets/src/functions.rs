@@ -264,6 +264,9 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		amount: T::Balance,
 		maybe_check_issuer: Option<T::AccountId>,
 	) -> DispatchResult {
+		let is_locked = LockedAsset::<T, I>::get(id).map_or(false, |d| !d.mint_allowed);
+		ensure!(!is_locked, Error::<T, I>::NoPermission);
+
 		Self::increase_balance(id, beneficiary, amount, |details| -> DispatchResult {
 			if let Some(check_issuer) = maybe_check_issuer {
 				ensure!(&check_issuer == &details.issuer, Error::<T, I>::NoPermission);
@@ -335,6 +338,9 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		maybe_check_admin: Option<T::AccountId>,
 		f: DebitFlags,
 	) -> Result<T::Balance, DispatchError> {
+		let is_locked = LockedAsset::<T, I>::contains_key(id);
+		ensure!(!is_locked, Error::<T, I>::NoPermission);
+
 		let actual = Self::decrease_balance(id, target, amount, f, |actual, details| {
 			// Check admin rights.
 			if let Some(check_admin) = maybe_check_admin {
@@ -417,6 +423,9 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		maybe_need_admin: Option<T::AccountId>,
 		f: TransferFlags,
 	) -> Result<T::Balance, DispatchError> {
+		let is_locked = LockedAsset::<T, I>::get(id).map_or(false, |d| !d.transfer_allowed);
+		ensure!(!is_locked, Error::<T, I>::NoPermission);
+
 		// Early exist if no-op.
 		if amount.is_zero() {
 			Self::deposit_event(Event::Transferred {
@@ -544,6 +553,9 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		witness: DestroyWitness,
 		maybe_check_owner: Option<T::AccountId>,
 	) -> Result<DestroyWitness, DispatchError> {
+		let is_locked = LockedAsset::<T, I>::contains_key(id);
+		ensure!(!is_locked, Error::<T, I>::NoPermission);
+
 		Asset::<T, I>::try_mutate_exists(id, |maybe_details| {
 			let mut details = maybe_details.take().ok_or(Error::<T, I>::Unknown)?;
 			if let Some(check_owner) = maybe_check_owner {
@@ -588,6 +600,9 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		delegate: &T::AccountId,
 		amount: T::Balance,
 	) -> DispatchResult {
+		let is_locked = LockedAsset::<T, I>::get(id).map_or(false, |d| !d.transfer_allowed);
+		ensure!(!is_locked, Error::<T, I>::NoPermission);
+
 		let mut d = Asset::<T, I>::get(id).ok_or(Error::<T, I>::Unknown)?;
 		ensure!(!d.is_frozen, Error::<T, I>::Frozen);
 		Approvals::<T, I>::try_mutate(
@@ -637,6 +652,9 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		destination: &T::AccountId,
 		amount: T::Balance,
 	) -> DispatchResult {
+		let is_locked = LockedAsset::<T, I>::contains_key(id);
+		ensure!(!is_locked, Error::<T, I>::NoPermission);
+
 		Approvals::<T, I>::try_mutate_exists(
 			(id, &owner, delegate),
 			|maybe_approved| -> DispatchResult {

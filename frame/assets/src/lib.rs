@@ -632,6 +632,7 @@ pub mod pallet {
 		) -> DispatchResult {
 			let origin = ensure_signed(origin)?;
 			let beneficiary = T::Lookup::lookup(beneficiary)?;
+
 			Self::do_mint(id, &beneficiary, amount, Some(origin))?;
 			Ok(())
 		}
@@ -783,6 +784,9 @@ pub mod pallet {
 		) -> DispatchResult {
 			let origin = ensure_signed(origin)?;
 
+			let is_locked = LockedAsset::<T, I>::contains_key(id);
+			ensure!(!is_locked, Error::<T, I>::NoPermission);
+
 			let d = Asset::<T, I>::get(id).ok_or(Error::<T, I>::Unknown)?;
 			ensure!(&origin == &d.freezer, Error::<T, I>::NoPermission);
 			let who = T::Lookup::lookup(who)?;
@@ -812,6 +816,9 @@ pub mod pallet {
 		) -> DispatchResult {
 			let origin = ensure_signed(origin)?;
 
+			let is_locked = LockedAsset::<T, I>::contains_key(id);
+			ensure!(!is_locked, Error::<T, I>::NoPermission);
+
 			let details = Asset::<T, I>::get(id).ok_or(Error::<T, I>::Unknown)?;
 			ensure!(&origin == &details.admin, Error::<T, I>::NoPermission);
 			let who = T::Lookup::lookup(who)?;
@@ -839,6 +846,9 @@ pub mod pallet {
 		) -> DispatchResult {
 			let origin = ensure_signed(origin)?;
 
+			let is_locked = LockedAsset::<T, I>::contains_key(id);
+			ensure!(!is_locked, Error::<T, I>::NoPermission);
+
 			Asset::<T, I>::try_mutate(id, |maybe_details| {
 				let d = maybe_details.as_mut().ok_or(Error::<T, I>::Unknown)?;
 				ensure!(&origin == &d.freezer, Error::<T, I>::NoPermission);
@@ -865,6 +875,9 @@ pub mod pallet {
 			#[pallet::compact] id: T::AssetId,
 		) -> DispatchResult {
 			let origin = ensure_signed(origin)?;
+
+			let is_locked = LockedAsset::<T, I>::contains_key(id);
+			ensure!(!is_locked, Error::<T, I>::NoPermission);
 
 			Asset::<T, I>::try_mutate(id, |maybe_details| {
 				let d = maybe_details.as_mut().ok_or(Error::<T, I>::Unknown)?;
@@ -894,6 +907,10 @@ pub mod pallet {
 			owner: <T::Lookup as StaticLookup>::Source,
 		) -> DispatchResult {
 			let origin = ensure_signed(origin)?;
+
+			let is_locked = LockedAsset::<T, I>::contains_key(id);
+			ensure!(!is_locked, Error::<T, I>::NoPermission);
+
 			let owner = T::Lookup::lookup(owner)?;
 
 			Asset::<T, I>::try_mutate(id, |maybe_details| {
@@ -937,6 +954,10 @@ pub mod pallet {
 			freezer: <T::Lookup as StaticLookup>::Source,
 		) -> DispatchResult {
 			let origin = ensure_signed(origin)?;
+
+			let is_locked = LockedAsset::<T, I>::contains_key(id);
+			ensure!(!is_locked, Error::<T, I>::NoPermission);
+
 			let issuer = T::Lookup::lookup(issuer)?;
 			let admin = T::Lookup::lookup(admin)?;
 			let freezer = T::Lookup::lookup(freezer)?;
@@ -1127,6 +1148,9 @@ pub mod pallet {
 		) -> DispatchResult {
 			T::ForceOrigin::ensure_origin(origin)?;
 
+			let is_locked = LockedAsset::<T, I>::contains_key(id);
+			ensure!(!is_locked, Error::<T, I>::NoPermission);
+
 			Asset::<T, I>::try_mutate(id, |maybe_asset| {
 				let mut asset = maybe_asset.take().ok_or(Error::<T, I>::Unknown)?;
 				asset.owner = T::Lookup::lookup(owner)?;
@@ -1287,7 +1311,10 @@ pub mod pallet {
 		pub fn lock_asset(who: &T::AccountId, asset: T::AssetId) -> DispatchResult {
 			let details = Asset::<T, I>::get(asset).ok_or(Error::<T, I>::Unknown)?;
 			ensure!(details.owner == *who, Error::<T, I>::WrongOwner);
-			LockedAsset::<T, I>::insert(asset, LockedAssetDetails {});
+			LockedAsset::<T, I>::insert(
+				asset,
+				LockedAssetDetails { mint_allowed: false, transfer_allowed: false },
+			);
 
 			Ok(())
 		}
@@ -1303,6 +1330,28 @@ pub mod pallet {
 				*details = None;
 			});
 
+			Ok(())
+		}
+
+		pub fn unlock_asset_mint(who: &T::AccountId, asset: T::AssetId) -> DispatchResult {
+			let details = Asset::<T, I>::get(asset).ok_or(Error::<T, I>::Unknown)?;
+			ensure!(details.owner == *who, Error::<T, I>::WrongOwner);
+			LockedAsset::<T, I>::mutate(asset, |maybe_details| {
+				if let Some(details) = maybe_details {
+					details.mint_allowed = true;
+				}
+			});
+			Ok(())
+		}
+
+		pub fn unlock_asset_transfer(who: &T::AccountId, asset: T::AssetId) -> DispatchResult {
+			let details = Asset::<T, I>::get(asset).ok_or(Error::<T, I>::Unknown)?;
+			ensure!(details.owner == *who, Error::<T, I>::WrongOwner);
+			LockedAsset::<T, I>::mutate(asset, |maybe_details| {
+				if let Some(details) = maybe_details {
+					details.transfer_allowed = true;
+				}
+			});
 			Ok(())
 		}
 	}

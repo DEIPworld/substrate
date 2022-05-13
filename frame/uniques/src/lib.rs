@@ -190,9 +190,12 @@ pub mod pallet {
 
 	#[pallet::storage]
 	/// Locked assets.
-	pub(super) type LockedAsset<T: Config<I>, I: 'static = ()> = StorageNMap<
+	pub(super) type LockedAsset<T: Config<I>, I: 'static = ()> = StorageDoubleMap<
 		_,
-		(NMapKey<Blake2_128Concat, T::ClassId>, NMapKey<Blake2_128Concat, T::InstanceId>),
+		Blake2_128Concat,
+		T::ClassId,
+		Blake2_128Concat,
+		T::InstanceId,
 		LockedAssetDetails,
 	>;
 
@@ -551,6 +554,11 @@ pub mod pallet {
 		) -> DispatchResult {
 			let origin = ensure_signed(origin)?;
 
+			for instance in &instances {
+				let is_locked = LockedAsset::<T, I>::contains_key(class, instance);
+				ensure!(!is_locked, Error::<T, I>::NoPermission);
+			}
+
 			let mut class_details = Class::<T, I>::get(&class).ok_or(Error::<T, I>::Unknown)?;
 			ensure!(class_details.owner == origin, Error::<T, I>::NoPermission);
 			let deposit = match class_details.free_holding {
@@ -610,6 +618,9 @@ pub mod pallet {
 		) -> DispatchResult {
 			let origin = ensure_signed(origin)?;
 
+			let is_locked = LockedAsset::<T, I>::contains_key(class, instance);
+			ensure!(!is_locked, Error::<T, I>::NoPermission);
+
 			let mut details =
 				Asset::<T, I>::get(&class, &instance).ok_or(Error::<T, I>::Unknown)?;
 			let class_details = Class::<T, I>::get(&class).ok_or(Error::<T, I>::Unknown)?;
@@ -640,6 +651,9 @@ pub mod pallet {
 		) -> DispatchResult {
 			let origin = ensure_signed(origin)?;
 
+			let is_locked = LockedAsset::<T, I>::contains_key(class, instance);
+			ensure!(!is_locked, Error::<T, I>::NoPermission);
+
 			let mut details =
 				Asset::<T, I>::get(&class, &instance).ok_or(Error::<T, I>::Unknown)?;
 			let class_details = Class::<T, I>::get(&class).ok_or(Error::<T, I>::Unknown)?;
@@ -668,6 +682,9 @@ pub mod pallet {
 		) -> DispatchResult {
 			let origin = ensure_signed(origin)?;
 
+			let is_locked = LockedAsset::<T, I>::iter_key_prefix(class).next().is_some();
+			ensure!(!is_locked, Error::<T, I>::NoPermission);
+
 			Class::<T, I>::try_mutate(class, |maybe_details| {
 				let details = maybe_details.as_mut().ok_or(Error::<T, I>::Unknown)?;
 				ensure!(&origin == &details.freezer, Error::<T, I>::NoPermission);
@@ -694,6 +711,9 @@ pub mod pallet {
 			#[pallet::compact] class: T::ClassId,
 		) -> DispatchResult {
 			let origin = ensure_signed(origin)?;
+
+			let is_locked = LockedAsset::<T, I>::iter_key_prefix(class).next().is_some();
+			ensure!(!is_locked, Error::<T, I>::NoPermission);
 
 			Class::<T, I>::try_mutate(class, |maybe_details| {
 				let details = maybe_details.as_mut().ok_or(Error::<T, I>::Unknown)?;
@@ -723,6 +743,10 @@ pub mod pallet {
 			owner: <T::Lookup as StaticLookup>::Source,
 		) -> DispatchResult {
 			let origin = ensure_signed(origin)?;
+
+			let is_locked = LockedAsset::<T, I>::iter_key_prefix(class).next().is_some();
+			ensure!(!is_locked, Error::<T, I>::NoPermission);
+
 			let owner = T::Lookup::lookup(owner)?;
 
 			Class::<T, I>::try_mutate(class, |maybe_details| {
@@ -802,6 +826,10 @@ pub mod pallet {
 			#[pallet::compact] instance: T::InstanceId,
 			delegate: <T::Lookup as StaticLookup>::Source,
 		) -> DispatchResult {
+			let is_locked = LockedAsset::<T, I>::get(class, instance)
+				.map_or(false, |details| details.transfer_allowed);
+			ensure!(!is_locked, Error::<T, I>::NoPermission);
+
 			let maybe_check: Option<T::AccountId> = T::ForceOrigin::try_origin(origin)
 				.map(|_| None)
 				.or_else(|origin| ensure_signed(origin).map(Some).map_err(DispatchError::from))?;
@@ -911,6 +939,9 @@ pub mod pallet {
 			is_frozen: bool,
 		) -> DispatchResult {
 			T::ForceOrigin::ensure_origin(origin)?;
+
+			let is_locked = LockedAsset::<T, I>::iter_key_prefix(class).next().is_some();
+			ensure!(!is_locked, Error::<T, I>::NoPermission);
 
 			Class::<T, I>::try_mutate(class, |maybe_asset| {
 				let mut asset = maybe_asset.take().ok_or(Error::<T, I>::Unknown)?;
@@ -1257,13 +1288,15 @@ pub mod pallet {
 		) -> DispatchResult {
 			let asset = Asset::<T, I>::get(class, instance).ok_or(Error::<T, I>::Unknown)?;
 			ensure!(asset.owner == *who, Error::<T, I>::WrongOwner);
-			LockedAsset::<T, I>::insert((class, instance), LockedAssetDetails {});
+
+			let details = LockedAssetDetails { transfer_allowed: false };
+			LockedAsset::<T, I>::insert(class, instance, details);
 
 			Ok(())
 		}
 
 		pub fn is_asset_locked(class: T::ClassId, instance: T::InstanceId) -> bool {
-			LockedAsset::<T, I>::contains_key((class, instance))
+			LockedAsset::<T, I>::contains_key(class, instance)
 		}
 
 		pub fn unlock_asset(
@@ -1273,10 +1306,25 @@ pub mod pallet {
 		) -> DispatchResult {
 			let asset = Asset::<T, I>::get(class, instance).ok_or(Error::<T, I>::Unknown)?;
 			ensure!(asset.owner == *who, Error::<T, I>::WrongOwner);
-			LockedAsset::<T, I>::mutate_exists((class, instance), |details| {
+			LockedAsset::<T, I>::mutate_exists(class, instance, |details| {
 				*details = None;
 			});
 
+			Ok(())
+		}
+
+		pub fn unlock_asset_transfer(
+			who: &T::AccountId,
+			class: T::ClassId,
+			instance: T::InstanceId,
+		) -> DispatchResult {
+			let details = Asset::<T, I>::get(class, instance).ok_or(Error::<T, I>::Unknown)?;
+			ensure!(details.owner == *who, Error::<T, I>::WrongOwner);
+			LockedAsset::<T, I>::mutate(class, instance, |maybe_details| {
+				if let Some(details) = maybe_details {
+					details.transfer_allowed = true;
+				}
+			});
 			Ok(())
 		}
 	}

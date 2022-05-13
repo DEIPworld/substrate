@@ -18,6 +18,7 @@
 //! Various basic types for use in the assets pallet.
 
 use super::*;
+use codec::MaxEncodedLen;
 use frame_support::{traits::Get, BoundedVec};
 use scale_info::TypeInfo;
 
@@ -121,5 +122,7 @@ pub struct InstanceMetadata<DepositBalance, StringLimit: Get<u32>> {
 	pub(super) is_frozen: bool,
 }
 
-#[derive(Clone, Encode, Decode, Eq, PartialEq, TypeInfo)]
-pub struct LockedAssetDetails {}
+#[derive(Clone, Encode, Decode, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
+pub struct LockedAssetDetails {
+	pub transfer_allowed: bool,
+}
