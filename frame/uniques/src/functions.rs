@@ -31,6 +31,10 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 			&mut InstanceDetailsFor<T, I>,
 		) -> DispatchResult,
 	) -> DispatchResult {
+		let is_locked = LockedAsset::<T, I>::get(class, instance)
+			.map_or(false, |details| !details.transfer_allowed);
+		ensure!(!is_locked, Error::<T, I>::NoPermission);
+
 		let class_details = Class::<T, I>::get(&class).ok_or(Error::<T, I>::Unknown)?;
 		ensure!(!class_details.is_frozen, Error::<T, I>::Frozen);
 
@@ -90,6 +94,9 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		witness: DestroyWitness,
 		maybe_check_owner: Option<T::AccountId>,
 	) -> Result<DestroyWitness, DispatchError> {
+		let is_locked = LockedAsset::<T, I>::iter_key_prefix(class).next().is_some();
+		ensure!(!is_locked, Error::<T, I>::NoPermission);
+
 		Class::<T, I>::try_mutate_exists(class, |maybe_details| {
 			let class_details = maybe_details.take().ok_or(Error::<T, I>::Unknown)?;
 			if let Some(check_owner) = maybe_check_owner {
@@ -160,6 +167,9 @@ impl<T: Config<I>, I: 'static> Pallet<T, I> {
 		instance: T::InstanceId,
 		with_details: impl FnOnce(&ClassDetailsFor<T, I>, &InstanceDetailsFor<T, I>) -> DispatchResult,
 	) -> DispatchResult {
+		let is_locked = LockedAsset::<T, I>::contains_key(class, instance);
+		ensure!(!is_locked, Error::<T, I>::NoPermission);
+
 		let owner = Class::<T, I>::try_mutate(
 			&class,
 			|maybe_class_details| -> Result<T::AccountId, DispatchError> {

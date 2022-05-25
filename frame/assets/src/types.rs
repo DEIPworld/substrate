@@ -233,3 +233,9 @@ where
 			.saturating_mul_int(balance))
 	}
 }
+
+#[derive(Clone, Encode, Decode, MaxEncodedLen, Eq, PartialEq, TypeInfo)]
+pub struct LockedAssetDetails {
+	pub mint_allowed: bool,
+	pub transfer_allowed: bool,
+}
