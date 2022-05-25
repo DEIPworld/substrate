@@ -1319,6 +1319,17 @@ pub mod pallet {
 			Ok(())
 		}
 
+		pub fn lock_asset_transfer(who: &T::AccountId, asset: T::AssetId) -> DispatchResult {
+			let details = Asset::<T, I>::get(asset).ok_or(Error::<T, I>::Unknown)?;
+			ensure!(details.owner == *who, Error::<T, I>::WrongOwner);
+			LockedAsset::<T, I>::mutate(asset, |maybe_details| {
+				if let Some(details) = maybe_details {
+					details.transfer_allowed = false;
+				}
+			});
+			Ok(())
+		}
+
 		pub fn is_asset_locked(asset: T::AssetId) -> bool {
 			LockedAsset::<T, I>::contains_key(asset)
 		}
